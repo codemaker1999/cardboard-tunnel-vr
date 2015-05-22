@@ -11,6 +11,7 @@ public class Logic : MonoBehaviour {
 	public int numNodes;
 	public float maxAngle;
 	public float totalAngle;
+	public float dt;
 
 	public Text flashText;
 	public Text scoreText;
@@ -28,9 +29,10 @@ public class Logic : MonoBehaviour {
 	private float phiY;
 	private Quaternion tunnelPtr;
 	private Vector3 tunnelPos;
-	private bool makeTunnel = false;
-	private int counter = 0;
 	private Vector3 tunnelFwd;
+	private bool makeTunnel = false;
+	private float time = 0;
+	private int counter = 0;
 
 	// Use this for initialization
 	IEnumerator Start () {
@@ -103,10 +105,10 @@ public class Logic : MonoBehaviour {
 		// update values
 		float totalX = 0.0f;
 		float totalY = 0.0f;
-		float t = Time.time;
+		time += dt;
 		for (int i=0; i<numNodes; i++) {
-			float dx = thetasX[i] * Sin (omegasX[i] * t);;
-			float dy = thetasY[i] * Sin (omegasY[i] * t);;
+			float dx = thetasX[i] * Sin (omegasX[i] * time);;
+			float dy = thetasY[i] * Sin (omegasY[i] * time);;
 			totalX += dx;
 			totalY += dy;
 		}
@@ -116,7 +118,7 @@ public class Logic : MonoBehaviour {
 		Vector3 v1 = new Vector3(Sin(phiX),Cos(phiX),0);
 		Vector3 v2 = new Vector3(0,Cos(phiY),Sin(phiY));
 		tunnelFwd = tunnelPtr * Vector3.Normalize(v1 + v2);
-		tunnelPos = tunnelPos + (velocity * Time.deltaTime * tunnelFwd);
+		tunnelPos = tunnelPos + (velocity * dt * tunnelFwd);
 //		Vector3 n1 = Vector3.Normalize(new Vector3( (fwd.y-fwd.x)/(fwd.y-fwd.z), 0, 1));
 //		Vector3 n2 = -1.0f * n1;
 //		Vector3 n3 = Vector3.Normalize(Vector3.Cross(fwd, n1));
@@ -157,12 +159,14 @@ public class Logic : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		UpdateTunnel();
-		if (makeTunnel && counter == 10) {
-			Instantiate(prefab,tunnelPos,Quaternion.FromToRotation(Vector3.up,tunnelFwd));
-			counter = 0;
+		while (makeTunnel && Vector3.Distance(transform.position, tunnelPos) < 40.0f) {
+			UpdateTunnel();
+			if (counter == 10) {
+				Instantiate(prefab,tunnelPos,Quaternion.FromToRotation(Vector3.up,tunnelFwd));
+				counter = 0;
+			}
+			++counter;
 		}
-		++counter;
 		// velocity
 		velocity += acceleration * Time.deltaTime;
 		Vector3 fwd = head.Gaze.direction;
