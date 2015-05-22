@@ -3,9 +3,6 @@ using UnityEngine.UI;
 using System.Collections;
 
 public class Logic : MonoBehaviour {
-
-	public delegate float DervFunc(float[] args);
-
 	public CardboardHead head;
 	public float initialVelocity;
 	public float acceleration;
@@ -13,11 +10,12 @@ public class Logic : MonoBehaviour {
 	public int countdown;
 	public int numNodes;
 	public float maxAngle;
+	public float totalAngle;
 
 	public Text flashText;
 	public Text scoreText;
 	public Text highscoreText;
-	public GameObject prefabPlane;
+	public GameObject prefab;
 
 	private float score;
 	private float highscore;
@@ -31,6 +29,8 @@ public class Logic : MonoBehaviour {
 	private Quaternion tunnelPtr;
 	private Vector3 tunnelPos;
 	private bool makeTunnel = false;
+	private int counter = 0;
+	private Vector3 tunnelFwd;
 
 	// Use this for initialization
 	IEnumerator Start () {
@@ -48,24 +48,31 @@ public class Logic : MonoBehaviour {
 		omegasY = new float[numNodes];
 		thetasX = new float[numNodes];
 		thetasY = new float[numNodes];
-		float leftoverX = maxAngle;
-		float leftoverY = maxAngle;
+		float leftoverX = totalAngle;
+		float leftoverY = totalAngle;
 		float totalX = 0;
 		float totalY = 0;
+		float rX;
+		float rY;
 		for (int i=0; i<numNodes-1; i++) {
-			float rX = leftoverX * Random.value;
-			float rY = leftoverY * Random.value;
+			do { 
+				rX = leftoverX * Random.value;
+			} while (rX > maxAngle);
+			do { 
+				rY = leftoverY * Random.value;
+			} while (rY > maxAngle);
+
 			thetasX[i] = rX;
 			thetasY[i] = rY;
 			totalX += rX;
 			totalY += rY;
-			leftoverX = maxAngle - totalX;
-			leftoverY = maxAngle - totalY;
+			leftoverX = totalAngle - totalX;
+			leftoverY = totalAngle - totalY;
 			omegasX[i] = (float)System.Math.Sqrt(9.81/(double)(3.0f*Random.value));
    			omegasY[i] = (float)System.Math.Sqrt(9.81/(double)(3.0f*Random.value));
 		}
-		thetasX[numNodes-1] = maxAngle - totalX;
-		thetasY[numNodes-1] = maxAngle - totalY;
+		thetasX[numNodes-1] = totalAngle - totalX;
+		thetasY[numNodes-1] = totalAngle - totalY;
 		// countdown to start (do preparation here)
 		int n = 0;
 		float begin = Time.time;
@@ -92,7 +99,7 @@ public class Logic : MonoBehaviour {
 		return (float)System.Math.Cos ((double)x);
 	}
 
-	void BoreTunnel() {
+	void UpdateTunnel() {
 		// update values
 		float totalX = 0.0f;
 		float totalY = 0.0f;
@@ -108,9 +115,8 @@ public class Logic : MonoBehaviour {
 		// create tunnel
 		Vector3 v1 = new Vector3(Sin(phiX),Cos(phiX),0);
 		Vector3 v2 = new Vector3(0,Cos(phiY),Sin(phiY));
-		Vector3 fwd = tunnelPtr * Vector3.Normalize(v1 + v2);
-		tunnelPos = tunnelPos + (velocity * Time.deltaTime * fwd);
-		Instantiate(prefabPlane,tunnelPos,Quaternion.identity);
+		tunnelFwd = tunnelPtr * Vector3.Normalize(v1 + v2);
+		tunnelPos = tunnelPos + (velocity * Time.deltaTime * tunnelFwd);
 //		Vector3 n1 = Vector3.Normalize(new Vector3( (fwd.y-fwd.x)/(fwd.y-fwd.z), 0, 1));
 //		Vector3 n2 = -1.0f * n1;
 //		Vector3 n3 = Vector3.Normalize(Vector3.Cross(fwd, n1));
@@ -151,9 +157,12 @@ public class Logic : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (makeTunnel) {
-			BoreTunnel();
+		UpdateTunnel();
+		if (makeTunnel && counter == 10) {
+			Instantiate(prefab,tunnelPos,Quaternion.FromToRotation(Vector3.up,tunnelFwd));
+			counter = 0;
 		}
+		++counter;
 		// velocity
 		velocity += acceleration * Time.deltaTime;
 		Vector3 fwd = head.Gaze.direction;
