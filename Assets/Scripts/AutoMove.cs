@@ -3,13 +3,14 @@ using System.Collections;
 
 public class AutoMove : MonoBehaviour {
 
+	public CardboardHead head;
 	public float acceleration;
 	public float initialSpeed;
+	public float maxSpeed;
 	private float speed;
 
 	// Use this for initialization
 	void Start () {
-		initialSpeed = 0.1f;
 		speed = initialSpeed;
 	}
 
@@ -19,9 +20,9 @@ public class AutoMove : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (speed < 2.0f) {
+		if (speed < maxSpeed) {
 			speed += Time.deltaTime * acceleration;
 		}
-		transform.position = transform.position + speed * Camera.main.transform.forward;
+		transform.position = transform.position + speed * head.Gaze.direction;
 	}
 }
